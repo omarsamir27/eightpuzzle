@@ -7,3 +7,21 @@ edition = "2021"
 
 [dependencies]
 tabled = "0.10.0"
+itertools = "0.10.5"
+
+
+[dev-dependencies]
+criterion = { version = "0.4.0", features = ["html_reports","real_blackbox"] }
+itertools = "0.10.5"
+
+[[bench]]
+name= "bencher"
+harness = false
+
+[lib]
+name = "search"
+path = "src/lib.rs"
+
+[profile.dev]
+opt-level = 3
+
