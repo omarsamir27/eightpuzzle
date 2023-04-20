@@ -5,12 +5,12 @@ use std::cmp::{Ordering, Reverse};
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 use std::fmt::{Display, Formatter};
 
-use std::io::{BufRead, read_to_string, stdin};
+use search::*;
+use std::io::{read_to_string, stdin, BufRead};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 use tabled::builder::Builder;
 use tabled::{Style, Table, Tabled};
-use search::*;
 
 fn main() {
     let state = [1_u8, 2, 5, 3, 4, 0, 6, 7, 8];
@@ -31,17 +31,16 @@ fn main() {
     //     results.push(avg);
     // }
 
-
     // let fns = ["DFS", "BFS", "A* with Euclid", "A* with Manhattan"];
     // for (name, val) in fns.iter().zip(results.iter()) {
     //     println!("{} : {}", name, val);
     // }
     let results = fns.map(|f| f(&state));
     let fns = ["DFS", "BFS", "A* with Euclid", "A* with Manhattan"];
-    for (i, (node, gen_count)) in results.into_iter().enumerate() {
+    for (i, (node, gen_count, num_states, expanded)) in results.into_iter().enumerate() {
         let name = fns[i];
         let node = node.unwrap();
-        println!("Method :{}\nNumber of Unique States Visited:{}\nSolution found at depth and with Cost:{}",name,gen_count,node.depth);
+        println!("Method :{}\nNumber of Unique States Generated:{}\nTotal Number of States Generated:{}\nNumber of Nodes Expanded:{}\nSolution found at depth and with Cost:{}",name,gen_count,num_states,expanded,node.depth);
         println!("Solution Path:");
         let path = backtrack_goal_to_root(node);
         let path = path_diagram(&path);

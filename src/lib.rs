@@ -1,18 +1,20 @@
+use crate::Move::*;
+use itertools::Itertools;
 use std::cmp::{Ordering, Reverse};
 use std::collections::{BinaryHeap, HashSet, VecDeque};
 use std::fmt::{Display, Formatter};
-use std::io::{BufRead, stdin};
+use std::io::{stdin, BufRead};
 use std::rc::Rc;
-use itertools::Itertools;
 use tabled::builder::Builder;
 use tabled::{Style, Table, Tabled};
-use crate::Move::*;
 
-pub fn get_state_from_user() -> Vec<u8>{
+pub fn get_state_from_user() -> Vec<u8> {
     let mut str = String::new();
-    stdin().lock().read_line(&mut str).unwrap();
-    str.remove(str.len()-1);
-    str.split_terminator(',').map(|num| num.parse::<u8>().unwrap()).collect_vec()
+    stdin().lock().read_line(&mut str   ).unwrap();
+    str.remove(str.len() - 1);
+    str.split_terminator(',')
+        .map(|num| num.parse::<u8>().unwrap())
+        .collect_vec()
 }
 
 /// Visualize the state transition tree that lead to the goal and the movement that generated it
@@ -38,7 +40,9 @@ pub fn backtrack_goal_to_root(node: Rc<Node>) -> Vec<(State, Move)> {
 }
 /// Informed A* Search using the Euclid Heurisitc, The Euclidean heuristic uses the straight line distance
 /// between each tile and its goal location
-pub fn Astar_euclid(state: &[u8]) -> (Option<Rc<Node>>, usize) {
+pub fn Astar_euclid(state: &[u8]) -> (Option<Rc<Node>>, usize, u64, u64) {
+    let mut state_counter = 0;
+    let mut expanded_counter = 0;
     let root = Rc::new(Node::new(state, None, 0, NoOp));
     let mut frontier = BinaryHeap::new();
     let mut visited = HashSet::new();
@@ -47,10 +51,12 @@ pub fn Astar_euclid(state: &[u8]) -> (Option<Rc<Node>>, usize) {
         root,
     )));
     while let Some(Reverse(Euclid(_, node))) = frontier.pop() {
+        expanded_counter += 1;
         if node.state.is_goal() {
-            return (Some(node), visited.len());
+            return (Some(node), visited.len(), state_counter, expanded_counter);
         }
         let child_states = node.get_children_states();
+        state_counter += child_states.len() as u64;
         let children = child_states
             .iter()
             .filter(|(s, m)| visited.insert(s.grid))
@@ -70,11 +76,13 @@ pub fn Astar_euclid(state: &[u8]) -> (Option<Rc<Node>>, usize) {
             });
         frontier.extend(children)
     }
-    (None, visited.len())
+    (None, visited.len(), state_counter, expanded_counter)
 }
 /// Informed A* Search using the Manhattan Heurisitc, The Manhattan heuristic uses the number of horizontal
 /// and vertical moves needed for a tile to reach its final location
-pub fn Astar_manhattan(state: &[u8]) -> (Option<Rc<Node>>, usize) {
+pub fn Astar_manhattan(state: &[u8]) -> (Option<Rc<Node>>, usize, u64, u64) {
+    let mut state_counter = 0;
+    let mut expanded_counter = 0;
     let root = Rc::new(Node::new(state, None, 0, NoOp));
     let mut frontier = BinaryHeap::new();
     let mut visited = HashSet::new();
@@ -83,10 +91,12 @@ pub fn Astar_manhattan(state: &[u8]) -> (Option<Rc<Node>>, usize) {
         root,
     )));
     while let Some(Reverse(Manhattan(_, node))) = frontier.pop() {
+        expanded_counter += 1;
         if node.state.is_goal() {
-            return (Some(node), visited.len());
+            return (Some(node), visited.len(), state_counter, expanded_counter);
         }
         let child_states = node.get_children_states();
+        state_counter += child_states.len() as u64;
         let children = child_states
             .iter()
             .filter(|(s, m)| visited.insert(s.grid))
@@ -106,19 +116,23 @@ pub fn Astar_manhattan(state: &[u8]) -> (Option<Rc<Node>>, usize) {
             });
         frontier.extend(children)
     }
-    (None, visited.len())
+    (None, visited.len(), state_counter, expanded_counter)
 }
 /// Blind Search using Breadth First Search , loops are avoided by not generating previously generated states
-pub fn bfs(state: &[u8]) -> (Option<Rc<Node>>, usize) {
+pub fn bfs(state: &[u8]) -> (Option<Rc<Node>>, usize, u64, u64) {
+    let mut state_counter = 0;
+    let mut expanded_counter = 0;
     let root = Rc::new(Node::new(state, None, 0, NoOp));
     let mut frontier = VecDeque::new();
     let mut visited = HashSet::new();
     frontier.push_back(root);
     while let Some(node) = frontier.pop_front() {
+        expanded_counter += 1;
         if node.state.is_goal() {
-            return (Some(node), visited.len());
+            return (Some(node), visited.len(), state_counter, expanded_counter);
         }
         let child_states = node.get_children_states();
+        state_counter += child_states.len() as u64;
         let children = child_states
             .iter()
             .filter(|(s, m)| visited.insert(s.grid))
@@ -135,19 +149,23 @@ pub fn bfs(state: &[u8]) -> (Option<Rc<Node>>, usize) {
         // }
         frontier.extend(children);
     }
-    (None, visited.len())
+    (None, visited.len(), state_counter, expanded_counter)
 }
 /// Blind Search using Depth First Search , loops are avoided by not generating previously generated states
-pub fn dfs(state: &[u8]) -> (Option<Rc<Node>>, usize) {
+pub fn dfs(state: &[u8]) -> (Option<Rc<Node>>, usize, u64, u64) {
+    let mut state_counter = 0;
+    let mut expanded_counter = 0;
     let root = Rc::new(Node::new(state, None, 0, NoOp));
     let mut frontier = VecDeque::new();
     let mut visited = HashSet::new();
     frontier.push_back(root);
     while let Some(node) = frontier.pop_front() {
+        expanded_counter +=1;
         if node.state.is_goal() {
-            return (Some(node), visited.len());
+            return (Some(node), visited.len(), state_counter, expanded_counter);
         }
         let child_states = node.get_children_states();
+        state_counter += child_states.len() as u64;
         let children = child_states
             .iter()
             .filter(|(s, m)| visited.insert(s.grid))
@@ -163,7 +181,7 @@ pub fn dfs(state: &[u8]) -> (Option<Rc<Node>>, usize) {
             frontier.push_front(child);
         }
     }
-    (None, visited.len())
+    (None, visited.len(), state_counter, expanded_counter)
 }
 /// Wrapper Struct to use Euclid Heuristic to sort nodes in a priority queue.
 struct Euclid(f32, Rc<Node>);
@@ -377,9 +395,9 @@ impl State {
 }
 
 fn table<I, T>(iter: I) -> String
-    where
-        T: Tabled,
-        I: IntoIterator<Item = T>,
+where
+    T: Tabled,
+    I: IntoIterator<Item = T>,
 {
     let mut t = Table::builder(iter);
     t.remove_columns();
